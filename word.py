@@ -1,4 +1,5 @@
 class Word:
+
     def __init__(self, spelling, stress_pattern):
         self.spelling = spelling
         self.stress_pattern = stress_pattern

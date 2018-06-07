@@ -1,12 +1,14 @@
 import pronouncing as p
 from typing import List
 
+
 def make_one_zero_str(length: int, start_stress: int) -> str:
     one_zero_str = ""
     for index in range(start_stress, length + start_stress):
         one_zero_str += str(index % 2)
 
     return one_zero_str
+
 
 def get_possible_stresses(current_stresses: str) -> List[str]:
     """
@@ -21,11 +23,13 @@ def get_possible_stresses(current_stresses: str) -> List[str]:
     possible_stress_lengths = list(range(1, remaining_stresses + 1))
     return list(map(lambda length: make_one_zero_str(length, start_stress), possible_stress_lengths))
 
+
 def word_matches_stress(word: str, stress_pattern_match: str) -> bool:
     '''
     eg: stress_pattern_match = "010"
     '''
-    pronunciations = p.phones_for_word(word) # word can have more than 1 pronunciation. eg: lead of a pencil, someone lead someone
+    pronunciations = p.phones_for_word(
+        word)  # word can have more than 1 pronunciation. eg: lead of a pencil, someone lead someone
     for pronunciation in pronunciations:
         original_stress_pattern = p.stresses(pronunciation)
 
