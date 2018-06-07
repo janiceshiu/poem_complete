@@ -34,7 +34,17 @@ def load_or_create_ngram() -> Dict[str, List[str]]:
       return ngram_dict
 
 
+
+def convert_to_word(token: str) -> Word:
+  pass
+
 def main():
+  start = input("How should we start your poem? ").lower().strip()
+
+  words = [convert_to_word(token) for token in start.split()]
+
+
+
   ngram_dict = load_or_create_ngram()
 
   current_line = [Word("shall", "0")]
@@ -47,7 +57,7 @@ def main():
   print(time.time() - start)
 
 
-def get_next_word(current_word, model):
+def get_next_word(current_word:Word, model) -> List[Word]:
     """
         :type current_word: string
         :type mode: markov_model
@@ -85,8 +95,7 @@ def get_possible_words(current_line:List[Word], ngram_dict:Dict[str, List[str]],
 
 def has_path_to_rhyme(current_line:List[Word], rhyme_word: Word, ngram_dict:Dict) -> bool:
     """
-    Case 1: current_line has 10 syllables, in which case we return True
-    Case 2: current_line doesn't. In that case we check, of the next possible words, are there any that satisfy these constraints:
+  Of the next possible words, are there any that satisfy these constraints:
       a. They're less than or equal to 10 syllables when added to current_line, and it has_path_to_rhyme holds on the line that results from adding it
       b. if they `complete` the line, does it rhyme with rhyme_word
    """
