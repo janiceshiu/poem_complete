@@ -9,27 +9,43 @@ from stresses import get_possible_stresses, word_matches_stress
 import random
 import pronouncing as p
 import time
+import pickle
+import json
+
+def load_or_create_ngram() -> Dict[str, List[str]]:
+  try:
+      with open('ngram_dict.json') as fp:
+        ngram_dict = json.load(fp)
+        return ngram_dict
+  except FileNotFoundError:
+      words = gutenberg.words()
+      filtered = list(filter(lambda word: word.isalpha(), words))
+      filtered_lower = [ word.lower() for word in filtered ]
+
+      ngram_dict = defaultdict(list)
+      ngrams = zip(filtered_lower, filtered_lower[1:])
+      for w1, w2 in ngrams:
+          ngram_dict[w1].append(w2)
+
+
+      with open('ngram_dict.json', 'w') as fp:
+          json.dump(ngram_dict, fp)
+
+      return ngram_dict
+
 
 def main():
-  start_first = time.time()
-  words = gutenberg.words()
-  filtered = list(filter(lambda word: word.isalpha(), words))
-  filtered_lower = [ word.lower() for word in filtered ]
-
-  ngram_dict = defaultdict(list)
-  ngrams = zip(filtered_lower, filtered_lower[1:])
-  for w1, w2 in ngrams:
-    ngram_dict[w1].append(w2)
+  ngram_dict = load_or_create_ngram()
 
   current_line = [Word("shall", "0")]
+
   rhyme_word = Word("day", "1")
 
-  print(time.time() - start_first)
   start = time.time()
+
   print(has_path_to_rhyme(current_line, rhyme_word, ngram_dict))
   print(time.time() - start)
 
-  # return (filtered_lower, ngram_dict)
 
 def get_next_word(current_word, model):
     """
@@ -53,13 +69,14 @@ def filter_possible_words(possible_stresses: List[str], words: List[str]) -> Lis
                 filtered_words.append(Word(word, stress_pattern))
     return filtered_words
 
-def get_possible_words(current_line:List[Word], ngram_dict:Dict[str, List[str]]) -> List[Word]:
+def get_possible_words(current_line:List[Word], ngram_dict:Dict[str, List[str]], dedup:bool=False) -> List[Word]:
     current_stress_str = "".join([word.stress_pattern for word in current_line])
     possible_stresses = get_possible_stresses(current_stress_str)
     candidate_words = ngram_dict.get(current_line[-1].spelling, [])
 
     # deduping makes the `has_path_to_rhyme` search way faster!
-    candidate_words = list(set(candidate_words))
+    if dedup:
+      candidate_words = list(set(candidate_words))
 
     possible_words = filter_possible_words(possible_stresses, candidate_words)
 
@@ -73,7 +90,7 @@ def has_path_to_rhyme(current_line:List[Word], rhyme_word: Word, ngram_dict:Dict
       a. They're less than or equal to 10 syllables when added to current_line, and it has_path_to_rhyme holds on the line that results from adding it
       b. if they `complete` the line, does it rhyme with rhyme_word
    """
-    possible_words = get_possible_words(current_line, ngram_dict)
+    possible_words = get_possible_words(current_line, ngram_dict, dedup=True)
 
     for possible_word in possible_words:
 
