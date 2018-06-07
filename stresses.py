@@ -1,7 +1,8 @@
 import pronouncing as p
+from typing import List
 
 def make_one_zero_str(length: int, start_stress: int) -> str:
-    one_zero_str = ""™
+    one_zero_str = ""
     for index in range(start_stress, length + start_stress):
         one_zero_str += str(index % 2)
 

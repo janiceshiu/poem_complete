@@ -1,11 +1,12 @@
 
 import nltk as n
-from typing import List
+from typing import List, Dict
 from nltk.corpus import gutenberg
 from collections import defaultdict
 from word import Word
-from stresses import get_possible_stresses
+from stresses import get_possible_stresses, word_matches_stress
 import random
+import pronouncing as p
 
 # to run the script thing
 # if __name__ == '__main__':
@@ -32,7 +33,7 @@ def get_next_word(current_word, model):
     words = model.get_next_word(current_word)
     return words
 
-def filter_possible_words(possible_stresses: List[str], words: List[str]) -> List[str]:
+def filter_possible_words(possible_stresses: List[str], words: List[str]) -> List[Word]:
     """
         :type possible_stresses List[stress_strings]
         :type words List[strings]
@@ -42,12 +43,42 @@ def filter_possible_words(possible_stresses: List[str], words: List[str]) -> Lis
     for stress_pattern in possible_stresses:
         for word in words:
             if word_matches_stress(word, stress_pattern):
-                filtered_words.append(word)
+                filtered_words.append(Word(word, stress_pattern))
     return filtered_words
 
-def get_possible_words(current_line:List[str], current_stress_str: str, ngram_dict) -> List[Word]:
+def get_possible_words(current_line:List[Word], ngram_dict:Dict) -> List[Word]:
+    current_stress_str = "".join([word.stress_pattern for word in current_line])
     possible_stresses = get_possible_stresses(current_stress_str)
-    candidate_words = ngram_dict.get(current_line[-1], [])
+    candidate_words = ngram_dict.get(current_line[-1].spelling, [])
+
     possible_words = filter_possible_words(possible_stresses, candidate_words)
 
     return possible_words
+
+def has_path_to_rhyme(current_line:List[Word], rhyme_word: Word, ngram_dict:Dict) -> bool:
+    """
+    Case 1: current_line has 10 syllables, in which case we return True
+    Case 2: current_line doesn't. In that case we check, of the next possible words, are there any that satisfy these constraints:
+      a. They're less than or equal to 10 syllables when added to current_line, and it has_path_to_rhyme holds on the line that results from adding it
+      b. if they `complete` the line, does it rhyme with rhyme_word
+   """
+    possible_words = get_possible_words(current_line, ngram_dict)
+    for possible_word in possible_words:
+      if completes_line(possible_word, current_line) and rhymes(possible_word, rhyme_word):
+        return True
+      elif incomplete_line(possible_word, current_line):
+        return has_path_to_rhyme(current_line + [possible_word], rhyme_word, ngram_dict)
+
+    return False
+
+def completes_line(word:Word, current_line:List[Word]) -> bool:
+  line = current_line + [word]
+  return sum([len(word.stress_pattern) for word in line]) == 10
+
+def incomplete_line(word:Word, current_line:List[Word]) -> bool:
+  line = current_line + [word]
+  return sum([len(word.stress_pattern) for word in line]) < 10
+
+def rhymes(word:Word, rhyme_word: Word) -> bool:
+  return word.spelling in p.rhymes(rhyme_word.spelling)
+
