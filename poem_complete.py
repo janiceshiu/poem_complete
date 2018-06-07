@@ -1,3 +1,4 @@
+#!.env/bin/python3
 
 import nltk as n
 from typing import List, Dict
@@ -7,12 +8,10 @@ from word import Word
 from stresses import get_possible_stresses, word_matches_stress
 import random
 import pronouncing as p
-
-# to run the script thing
-# if __name__ == '__main__':
-#   main()
+import time
 
 def main():
+  start_first = time.time()
   words = gutenberg.words()
   filtered = list(filter(lambda word: word.isalpha(), words))
   filtered_lower = [ word.lower() for word in filtered ]
@@ -21,6 +20,14 @@ def main():
   ngrams = zip(filtered_lower, filtered_lower[1:])
   for w1, w2 in ngrams:
     ngram_dict[w1].append(w2)
+
+  current_line = [Word("shall", "0")]
+  rhyme_word = Word("day", "1")
+
+  print(time.time() - start_first)
+  start = time.time()
+  assert has_path_to_rhyme(current_line, rhyme_word, ngram_dict)
+  print(time.time() - start)
 
   # return (filtered_lower, ngram_dict)
 
@@ -82,3 +89,6 @@ def incomplete_line(word:Word, current_line:List[Word]) -> bool:
 def rhymes(word:Word, rhyme_word: Word) -> bool:
   return word.spelling in p.rhymes(rhyme_word.spelling)
 
+# to run the script thing
+if __name__ == '__main__':
+  main()
