@@ -26,7 +26,7 @@ def main():
 
   print(time.time() - start_first)
   start = time.time()
-  assert has_path_to_rhyme(current_line, rhyme_word, ngram_dict)
+  print(has_path_to_rhyme(current_line, rhyme_word, ngram_dict))
   print(time.time() - start)
 
   # return (filtered_lower, ngram_dict)
@@ -44,23 +44,27 @@ def filter_possible_words(possible_stresses: List[str], words: List[str]) -> Lis
     """
         :type possible_stresses List[stress_strings]
         :type words List[strings]
-        :filtered_words List[strings]
+        :filtered_words List[Word]
     """
-    filtered_words = []
+    filtered_words : List[Word] = []
     for stress_pattern in possible_stresses:
         for word in words:
             if word_matches_stress(word, stress_pattern):
                 filtered_words.append(Word(word, stress_pattern))
     return filtered_words
 
-def get_possible_words(current_line:List[Word], ngram_dict:Dict) -> List[Word]:
+def get_possible_words(current_line:List[Word], ngram_dict:Dict[str, List[str]]) -> List[Word]:
     current_stress_str = "".join([word.stress_pattern for word in current_line])
     possible_stresses = get_possible_stresses(current_stress_str)
     candidate_words = ngram_dict.get(current_line[-1].spelling, [])
 
+    # deduping makes the `has_path_to_rhyme` search way faster!
+    candidate_words = list(set(candidate_words))
+
     possible_words = filter_possible_words(possible_stresses, candidate_words)
 
     return possible_words
+
 
 def has_path_to_rhyme(current_line:List[Word], rhyme_word: Word, ngram_dict:Dict) -> bool:
     """
@@ -70,7 +74,9 @@ def has_path_to_rhyme(current_line:List[Word], rhyme_word: Word, ngram_dict:Dict
       b. if they `complete` the line, does it rhyme with rhyme_word
    """
     possible_words = get_possible_words(current_line, ngram_dict)
+
     for possible_word in possible_words:
+
       if completes_line(possible_word, current_line) and rhymes(possible_word, rhyme_word):
         return True
       elif incomplete_line(possible_word, current_line):
@@ -78,9 +84,11 @@ def has_path_to_rhyme(current_line:List[Word], rhyme_word: Word, ngram_dict:Dict
 
     return False
 
+
 def completes_line(word:Word, current_line:List[Word]) -> bool:
   line = current_line + [word]
   return sum([len(word.stress_pattern) for word in line]) == 10
+
 
 def incomplete_line(word:Word, current_line:List[Word]) -> bool:
   line = current_line + [word]
