@@ -1,17 +1,18 @@
 #!.env/bin/python3
 
-import nltk as n
-from typing import List, Dict
+import nltk
+from typing import List, Dict, Optional, Generator
 from nltk.corpus import gutenberg
 from collections import defaultdict
 from word import Word
-from stresses import get_possible_stresses, word_matches_stress
+from stresses import get_possible_stresses, word_matches_stress, get_stress_for_word
 import random
 import pronouncing as p
 import time
 import pickle
 import json
 
+NGRAM_DICT = Dict[str, List[str]]
 
 def load_or_create_ngram(reverse: bool = False) -> Dict[str, List[str]]:
     try:
@@ -49,21 +50,35 @@ def load_or_create_ngram(reverse: bool = False) -> Dict[str, List[str]]:
 
 
 def convert_to_word(token: str) -> Word:
-    pass
+    stress_pattern = get_stress_for_word(token)
+
+    return Word(token, stress_pattern)
 
 def main():
-    start = input("How should we start your poem? ").lower().strip()
+    # start = input("How should we start your poem? ").lower().strip()
+    start = "Shall I compare thee to a summer's day?".lower().strip()
+    tokens = nltk.tokenize.word_tokenize(start)
+    tokens = [token for token in tokens if token.isalpha()]
 
-    words = [convert_to_word(token) for token in start.split()]
+    line1 = [convert_to_word(token) for token in tokens]
 
+    # print(current_line)
     ngram_dict = load_or_create_ngram()
 
-    current_line = [Word("shall", "0")]
+    print(line1)
+    line2 = generate_line(ngram_dict, line1)
+    print(line2)
+    line3 = generate_line(ngram_dict, line2 , rhyme_word=line1[-1])
+    print(line3)
+    line4 = generate_line(ngram_dict, line3 , rhyme_word=line2[-1])
 
+    print(line4)
+    # current_line = [Word("shall", "0")]
     rhyme_word = Word("day", "1")
 
     start = time.time()
-    print(has_path_to_rhyme(current_line, rhyme_word, ngram_dict))
+    # print(current_line)
+    # print(has_path_to_rhyme([], current_line[-1], rhyme_word, ngram_dict))
     print(time.time() - start)
 
 
@@ -77,13 +92,41 @@ def get_next_word(current_word: Word, model) -> List[Word]:
     return words
 
 
+def generate_line(ngram_dict: NGRAM_DICT, previous_line: List[Word], rhyme_word: Optional[Word] = None) -> List[Word]:
+    current_line: List[Word] = []
+    current_word = previous_line[-1]
+    while sum([len(word.stress_pattern) for word in current_line]) < 10:
+        possible_words2 = []
+        possible_words = get_possible_words(
+            current_line, current_word, ngram_dict, dedup=True)
+        # print(rhyme_word)
+        if rhyme_word is not None:
+            # print(possible_words)
+            for word in possible_words:
+                if completes_line(word, current_line) and rhymes(word, rhyme_word):
+                    possible_words2.append(word)
+                if len(possible_words2) > 5:
+                    continue
+
+                if incomplete_line(word, current_line) and has_path_to_rhyme(current_line, word, rhyme_word, ngram_dict):
+                    possible_words2.append(word)
+            possible_words = possible_words2
+
+        current_word = random.choice(possible_words)
+        current_line.append(current_word)
+        # print(current_word)
+
+    return current_line
+
+
+
 def filter_possible_words(possible_stresses: List[str], words: List[str]) -> List[Word]:
     """
         :type possible_stresses List[stress_strings]
         :type words List[strings]
         :filtered_words List[Word]
     """
-    filtered_words: List[Word] = []
+    filtered_words = []
     for stress_pattern in possible_stresses:
         for word in words:
             if word_matches_stress(word, stress_pattern):
@@ -91,11 +134,11 @@ def filter_possible_words(possible_stresses: List[str], words: List[str]) -> Lis
     return filtered_words
 
 
-def get_possible_words(current_line: List[Word], ngram_dict: Dict[str, List[str]], dedup: bool=False) -> List[Word]:
+def get_possible_words(current_line: List[Word], current_word: Word, ngram_dict: NGRAM_DICT, dedup: bool=False) -> List[Word]:
     current_stress_str = "".join(
         [word.stress_pattern for word in current_line])
     possible_stresses = get_possible_stresses(current_stress_str)
-    candidate_words = ngram_dict.get(current_line[-1].spelling, [])
+    candidate_words = ngram_dict.get(current_word.spelling, [])
 
     # deduping makes the `has_path_to_rhyme` search way faster!
     if dedup:
@@ -106,20 +149,20 @@ def get_possible_words(current_line: List[Word], ngram_dict: Dict[str, List[str]
     return possible_words
 
 
-def has_path_to_rhyme(current_line: List[Word], rhyme_word: Word, ngram_dict: Dict) -> bool:
+def has_path_to_rhyme(current_line: List[Word], current_word:Word, rhyme_word: Word, ngram_dict: NGRAM_DICT) -> bool:
     """
     Of the next possible words, are there any that satisfy these constraints:
         a. They're less than or equal to 10 syllables when added to current_line, and it has_path_to_rhyme holds on the line that results from adding it
         b. if they `complete` the line, does it rhyme with rhyme_word
     """
-    possible_words = get_possible_words(current_line, ngram_dict, dedup=True)
+    possible_words = get_possible_words(current_line, current_word, ngram_dict, dedup=True)
 
     for possible_word in possible_words:
 
         if completes_line(possible_word, current_line) and rhymes(possible_word, rhyme_word):
             return True
         elif incomplete_line(possible_word, current_line):
-            return has_path_to_rhyme(current_line + [possible_word], rhyme_word, ngram_dict)
+            return has_path_to_rhyme(current_line + [possible_word], possible_word, rhyme_word, ngram_dict)
 
     return False
 
