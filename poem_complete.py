@@ -66,11 +66,11 @@ def main():
     ngram_dict = load_or_create_ngram()
 
     print(line1)
-    line2 = generate_line(ngram_dict, line1)
+    line2 = generate_line_forward(ngram_dict, line1[-1])
     print(line2)
-    line3 = generate_line(ngram_dict, line2 , rhyme_word=line1[-1])
+    line3 = generate_line_backward(ngram_dict, line2[-1], rhyme_word=line1[-1])
     print(line3)
-    line4 = generate_line(ngram_dict, line3 , rhyme_word=line2[-1])
+    line4 = generate_line_backward(ngram_dict, line3[-1], rhyme_word=line2[-1])
 
     print(line4)
     # current_line = [Word("shall", "0")]
@@ -80,7 +80,6 @@ def main():
     # print(current_line)
     # print(has_path_to_rhyme([], current_line[-1], rhyme_word, ngram_dict))
     print(time.time() - start)
-
 
 def get_next_word(current_word: Word, model) -> List[Word]:
     """
@@ -92,33 +91,23 @@ def get_next_word(current_word: Word, model) -> List[Word]:
     return words
 
 
-def generate_line(ngram_dict: NGRAM_DICT, previous_line: List[Word], rhyme_word: Optional[Word] = None) -> List[Word]:
+def generate_line_forward(ngram_dict: NGRAM_DICT, start_word: Word) -> List[Word]:
     current_line: List[Word] = []
-    current_word = previous_line[-1]
-    while sum([len(word.stress_pattern) for word in current_line]) < 10:
-        possible_words2 = []
-        possible_words = get_possible_words(
-            current_line, current_word, ngram_dict, dedup=True)
-        # print(rhyme_word)
-        if rhyme_word is not None:
-            # print(possible_words)
-            for word in possible_words:
-                if completes_line(word, current_line) and rhymes(word, rhyme_word):
-                    possible_words2.append(word)
-                if len(possible_words2) > 5:
-                    continue
+    if completes_line(start_word, current_line):
+        return current_line + [start_word]
 
-                if incomplete_line(word, current_line) and has_path_to_rhyme(current_line, word, rhyme_word, ngram_dict):
-                    possible_words2.append(word)
-            possible_words = possible_words2
-
+    current_word = start_word
+    while incomplete_line(current_word, current_line):
+        possible_words = get_possible_words(current_line, current_word, ngram_dict, True)
         current_word = random.choice(possible_words)
         current_line.append(current_word)
-        # print(current_word)
 
     return current_line
 
 
+def generate_line_backward(ngram_dict: NGRAM_DICT, start_word: Word, rhyme_word: Word) -> List[Word]:
+
+     pass
 
 def filter_possible_words(possible_stresses: List[str], words: List[str]) -> List[Word]:
     """
