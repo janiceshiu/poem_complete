@@ -48,18 +48,25 @@ def main():
     tokens = nltk.tokenize.word_tokenize(start)
     tokens = [token for token in tokens if token.isalpha()]
 
-    current_line = [convert_to_word(token) for token in tokens]
+    line1 = [convert_to_word(token) for token in tokens]
 
-    print(current_line)
+    # print(current_line)
     ngram_dict = load_or_create_ngram()
 
-    print(generate_line(ngram_dict, current_line, rhyme_word=current_line[-1]))
+    print(line1)
+    line2 = generate_line(ngram_dict, line1)
+    print(line2)
+    line3 = generate_line(ngram_dict, line2 , rhyme_word=line1[-1])
+    print(line3)
+    line4 = generate_line(ngram_dict, line3 , rhyme_word=line2[-1])
+
+    print(line4)
     # current_line = [Word("shall", "0")]
     rhyme_word = Word("day", "1")
 
     start = time.time()
-    print(current_line)
-    print(has_path_to_rhyme([], current_line[-1], rhyme_word, ngram_dict))
+    # print(current_line)
+    # print(has_path_to_rhyme([], current_line[-1], rhyme_word, ngram_dict))
     print(time.time() - start)
 
 
@@ -74,14 +81,24 @@ def get_next_word(current_word: Word, model) -> List[Word]:
 
 
 def generate_line(ngram_dict: NGRAM_DICT, previous_line: List[Word], rhyme_word: Optional[Word] = None) -> List[Word]:
-    current_line:List[Word] = []
+    current_line: List[Word] = []
     current_word = previous_line[-1]
     while sum([len(word.stress_pattern) for word in current_line]) < 10:
-        possible_words = get_possible_words(current_line, current_word, ngram_dict, dedup=True)[-5:]
+        possible_words2 = []
+        possible_words = get_possible_words(
+            current_line, current_word, ngram_dict, dedup=True)
         # print(rhyme_word)
         if rhyme_word is not None:
             # print(possible_words)
-            possible_words = [word for word in possible_words if has_path_to_rhyme(current_line, word, rhyme_word, ngram_dict)]
+            for word in possible_words:
+                if completes_line(word, current_line) and rhymes(word, rhyme_word):
+                    possible_words2.append(word)
+                if len(possible_words2) > 5:
+                    continue
+
+                if incomplete_line(word, current_line) and has_path_to_rhyme(current_line, word, rhyme_word, ngram_dict):
+                    possible_words2.append(word)
+            possible_words = possible_words2
 
         current_word = random.choice(possible_words)
         current_line.append(current_word)
