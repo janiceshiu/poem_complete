@@ -13,30 +13,43 @@ import pickle
 import json
 
 
-def load_or_create_ngram() -> Dict[str, List[str]]:
+def load_or_create_ngram(reverse: bool = False) -> Dict[str, List[str]]:
     try:
-        with open('ngram_dict.json') as fp:
-            ngram_dict = json.load(fp)
-            return ngram_dict
+        if reverse:
+          with open('ngram_reverse_dict.json') as fp:
+              ngram_dict = json.load(fp)
+              return ngram_dict
+        else:
+          with open('ngram_dict.json') as fp:
+              ngram_dict = json.load(fp)
+              return ngram_dict
+
     except FileNotFoundError:
         words = gutenberg.words()
         filtered = list(filter(lambda word: word.isalpha(), words))
         filtered_lower = [word.lower() for word in filtered]
 
         ngram_dict = defaultdict(list)
-        ngrams = zip(filtered_lower, filtered_lower[1:])
+
+        if reverse:
+            ngrams = zip(filtered_lower[1:], filtered_lower)
+        else:
+            ngrams = zip(filtered_lower, filtered_lower[1:])
         for w1, w2 in ngrams:
             ngram_dict[w1].append(w2)
 
-        with open('ngram_dict.json', 'w') as fp:
-            json.dump(ngram_dict, fp)
+        if reverse:
+            with open('ngram_reverse_dict.json') as fp:
+                json.dump(ngram_dict, fp)
+        else:
+            with open('ngram_dict.json', 'w') as fp:
+                json.dump(ngram_dict, fp)
 
         return ngram_dict
 
 
 def convert_to_word(token: str) -> Word:
     pass
-
 
 def main():
     start = input("How should we start your poem? ").lower().strip()
@@ -70,8 +83,7 @@ def filter_possible_words(possible_stresses: List[str], words: List[str]) -> Lis
         :type words List[strings]
         :filtered_words List[Word]
     """
-    filtered_words:
-        List[Word] = []
+    filtered_words: List[Word] = []
     for stress_pattern in possible_stresses:
         for word in words:
             if word_matches_stress(word, stress_pattern):
