@@ -1,5 +1,7 @@
 import pronouncing as p
 from typing import List
+import random
+import re
 
 
 def make_one_zero_str(length: int, start_stress: int) -> str:
@@ -24,12 +26,31 @@ def get_possible_stresses(current_stresses: str) -> List[str]:
     return list(map(lambda length: make_one_zero_str(length, start_stress), possible_stress_lengths))
 
 
+def guess_syllables(word: str) -> int:
+    """
+    how many successive groups of vowels are there? if none, assume it's no syllables
+    """
+    match = re.findall(r"[aeiou]+", word)
+    return len(match)
+
+
+def get_stress_for_word(word: str) -> str:
+    pronunciations = p.phones_for_word(word)
+    if not pronunciations:
+        num_syllables = guess_syllables(word)
+        return "?" * num_syllables
+    else:
+        return p.stresses(pronunciations[0])
+
+
 def word_matches_stress(word: str, stress_pattern_match: str) -> bool:
     '''
     eg: stress_pattern_match = "010"
     '''
-    pronunciations = p.phones_for_word(
-        word)  # word can have more than 1 pronunciation. eg: lead of a pencil, someone lead someone
+    # word can have more than 1 pronunciation. eg: lead of a pencil, someone
+    # lead someone
+    pronunciations = p.phones_for_word(word)
+
     for pronunciation in pronunciations:
         original_stress_pattern = p.stresses(pronunciation)
 
