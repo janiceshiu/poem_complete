@@ -15,7 +15,7 @@ import json
 NGRAM_DICT = Dict[str, List[str]]
 
 
-def load_or_create_ngram() -> Dict[str, List[str]]:
+def load_or_create_ngram() -> NGRAM_DICT:
     try:
         with open('ngram_dict.json') as fp:
             ngram_dict = json.load(fp)
