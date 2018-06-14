@@ -2,26 +2,23 @@ import pronouncing as p
 from typing import List
 
 
-def make_one_zero_str(length: int, start_stress: int) -> str:
-    one_zero_str = ""
-    for index in range(start_stress, length + start_stress):
-        one_zero_str += str(index % 2)
-
-    return one_zero_str
-
-
-def get_possible_stresses(current_stresses: str) -> List[str]:
+def get_possible_stresses(stress_pattern: str) -> List[str]:
     """
-    can assume that current_stresses is 0[1,2] repeated
-    eg: current_stresses = "010"
+    any subset of the target stress pattern.
     """
-    iamb_pent_syllables = 10
+    possible_stresses = []
+    for index in range(len(stress_pattern)):
+        possible_stresses.append(stress_pattern[:index + 1])
+    return possible_stresses
 
-    syllables = len(current_stresses)
-    remaining_stresses = iamb_pent_syllables - syllables
-    start_stress = remaining_stresses % 2  # if even, start with 0
-    possible_stress_lengths = list(range(1, remaining_stresses + 1))
-    return list(map(lambda length: make_one_zero_str(length, start_stress), possible_stress_lengths))
+def get_possible_stresses_rev(stress_pattern: str) -> List[str]:
+    """
+    any subset of the target stress pattern.
+    """
+    possible_stresses = []
+    for index in range(len(stress_pattern)):
+        possible_stresses.append(stress_pattern[-index:])
+    return possible_stresses
 
 
 def word_matches_stress(word: str, stress_pattern_match: str) -> bool:
@@ -42,3 +39,6 @@ def word_matches_stress(word: str, stress_pattern_match: str) -> bool:
             return True
 
     return False
+
+def word_fits_pattern(word: str, stress_pattern: str) -> bool:
+    return any(word_matches_stress(word, stress) for stress in get_possible_stresses(stress_pattern))
