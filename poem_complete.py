@@ -18,6 +18,7 @@ from subprocess import call
 
 NGRAM_DICT = Dict[str, List[str]]
 Line = str
+Stanza = List[Line]
 IAMBIC_PENTAMETER = "0101010101"
 
 def load_or_create_ngram(reverse: bool = False) -> NGRAM_DICT:
@@ -106,7 +107,7 @@ def line_to_string(line:List[Word]) -> Line:
     return " ".join(word.spelling for word in line)
 
 
-def produce_sonnet(start:List[Word], stress_pattern:str, ngram_dict:NGRAM_DICT, ngram_reverse_dict:NGRAM_DICT) -> List[Line]:
+def produce_sonnet(start:List[Word], stress_pattern:str, ngram_dict:NGRAM_DICT, ngram_reverse_dict:NGRAM_DICT) -> List[Stanza]:
 
     qt1 = produce_quatrain(start, IAMBIC_PENTAMETER, ngram_dict, ngram_reverse_dict)
 
