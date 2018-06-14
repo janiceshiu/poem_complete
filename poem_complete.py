@@ -109,30 +109,30 @@ def line_to_string(line:List[Word]) -> Line:
 
 def produce_sonnet(start:List[Word], stress_pattern:str, ngram_dict:NGRAM_DICT, ngram_reverse_dict:NGRAM_DICT) -> List[Stanza]:
 
-    qt1 = produce_quatrain(start, IAMBIC_PENTAMETER, ngram_dict, ngram_reverse_dict)
+    qt1 = produce_quatrain(start, stress_pattern, ngram_dict, ngram_reverse_dict)
 
     # print(qt1)
 
     last_word = qt1[-1][-1]
-    possible_words = get_possible_words(last_word, IAMBIC_PENTAMETER, ngram_dict)
+    possible_words = get_possible_words(last_word, stress_pattern, ngram_dict)
     next_word = possible_words[0]
-    qt2 = produce_quatrain([next_word], IAMBIC_PENTAMETER, ngram_dict, ngram_reverse_dict)
+    qt2 = produce_quatrain([next_word], stress_pattern, ngram_dict, ngram_reverse_dict)
     # print(qt2)
     last_word = qt2[-1][-1]
 
-    possible_words = get_possible_words(last_word, IAMBIC_PENTAMETER, ngram_dict)
+    possible_words = get_possible_words(last_word, stress_pattern, ngram_dict)
     next_word = possible_words[0]
-    qt3 = produce_quatrain([next_word], IAMBIC_PENTAMETER, ngram_dict, ngram_reverse_dict)
+    qt3 = produce_quatrain([next_word], stress_pattern, ngram_dict, ngram_reverse_dict)
 
 
     # print(qt3)
 
     last_word = qt3[-1][-1]
 
-    possible_words = get_possible_words(last_word, IAMBIC_PENTAMETER, ngram_dict)
+    possible_words = get_possible_words(last_word, stress_pattern, ngram_dict)
     next_word = possible_words[0]
 
-    couplet = produce_couplet([next_word], IAMBIC_PENTAMETER, ngram_dict, ngram_reverse_dict)
+    couplet = produce_couplet([next_word], stress_pattern, ngram_dict, ngram_reverse_dict)
     # print(couplet)
 
     lines = qt1 + qt2 + qt3 + couplet
@@ -149,6 +149,8 @@ def produce_limerick(start:List[Word], ngram_dict:NGRAM_DICT, ngram_reverse_dict
 
     LIMERICK1 = "010010010"
     LIMERICK2 = "0010010"
+
+
     line1 = complete_line_forward(start, LIMERICK1, ngram_dict)
 
     rhyme_seed = get_rhyme_word(line1[-1].spelling, LIMERICK1, ngram_reverse_dict)
@@ -174,23 +176,23 @@ def produce_limerick(start:List[Word], ngram_dict:NGRAM_DICT, ngram_reverse_dict
 
 
 def produce_quatrain(start:List[Word], stress_pattern:str, ngram_dict:NGRAM_DICT, ngram_reverse_dict:NGRAM_DICT) -> List[List[Word]]:
-    line1 = complete_line_forward(start, IAMBIC_PENTAMETER, ngram_dict)
-    line2 = gen_line_forward(line1[-1], IAMBIC_PENTAMETER, ngram_dict)
+    line1 = complete_line_forward(start, stress_pattern, ngram_dict)
+    line2 = gen_line_forward(line1[-1], stress_pattern, ngram_dict)
 
-    rhyme_seed = get_rhyme_word(line1[-1].spelling, IAMBIC_PENTAMETER[1:], ngram_reverse_dict)
+    rhyme_seed = get_rhyme_word(line1[-1].spelling, stress_pattern, ngram_reverse_dict)
 
-    line3 = gen_line_backward(rhyme_seed, IAMBIC_PENTAMETER, ngram_reverse_dict)
+    line3 = gen_line_backward(rhyme_seed, stress_pattern, ngram_reverse_dict)
 
-    rhyme_seed = get_rhyme_word(line2[-1].spelling, IAMBIC_PENTAMETER[1:], ngram_reverse_dict)
-    line4 = gen_line_backward(rhyme_seed, IAMBIC_PENTAMETER, ngram_reverse_dict)
+    rhyme_seed = get_rhyme_word(line2[-1].spelling, stress_pattern, ngram_reverse_dict)
+    line4 = gen_line_backward(rhyme_seed, stress_pattern, ngram_reverse_dict)
     return [line1, line2, line3, line4]
 
 
 def produce_couplet(start:List[Word], stress_pattern:str, ngram_dict:NGRAM_DICT, ngram_reverse_dict:NGRAM_DICT) -> List[List[Word]]:
-    line1 = complete_line_forward(start, IAMBIC_PENTAMETER, ngram_dict)
-    rhyme_seed = get_rhyme_word(line1[-1].spelling, IAMBIC_PENTAMETER[1:], ngram_reverse_dict)
+    line1 = complete_line_forward(start, stress_pattern, ngram_dict)
+    rhyme_seed = get_rhyme_word(line1[-1].spelling, stress_pattern, ngram_reverse_dict)
 
-    line2 = gen_line_backward(rhyme_seed, IAMBIC_PENTAMETER, ngram_reverse_dict)
+    line2 = gen_line_backward(rhyme_seed, stress_pattern, ngram_reverse_dict)
     return [line1, line2]
 
 
