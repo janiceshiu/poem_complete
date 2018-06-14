@@ -20,6 +20,7 @@ NGRAM_DICT = Dict[str, List[str]]
 Line = str
 Stanza = List[Line]
 IAMBIC_PENTAMETER = "0101010101"
+FEM_IAMBIC_PENTAMETER = "01010101010"
 
 def load_or_create_ngram(reverse: bool = False) -> NGRAM_DICT:
     try:
@@ -73,7 +74,7 @@ def main():
 
     start_sonnet = "Shall I".lower().strip()
 
-    start_limerick = "There".lower().strip()
+    start_limerick = "There once was a".lower().strip()
 
     words = [convert_to_word(token) for token in nltk.tokenize.word_tokenize(start_sonnet)]
 
@@ -88,13 +89,19 @@ def main():
     for stanza in sonnet:
         for line in stanza:
             print(line.capitalize())
-            say(line)
+            # say(line)
 
         print("")
 
+
+    # start_limerick = "There once was a".lower().strip()
+    # words = [convert_to_word(token) for token in nltk.tokenize.word_tokenize(start_limerick)]
+
+
+    # print("\n\n\n")
     # for line in produce_limerick(words, ngram_dict, ngram_reverse_dict):
     #     print(line)
-    #     say(line)
+        # say(line)
 
 
 
@@ -152,20 +159,27 @@ def produce_limerick(start:List[Word], ngram_dict:NGRAM_DICT, ngram_reverse_dict
 
 
     line1 = complete_line_forward(start, LIMERICK1, ngram_dict)
+    print(line1)
 
     rhyme_seed = get_rhyme_word(line1[-1].spelling, LIMERICK1, ngram_reverse_dict)
-
+    print(rhyme_seed)
     line2 = gen_line_backward(rhyme_seed, LIMERICK1, ngram_reverse_dict)
-
+    print(line2)
 
     line3 = gen_line_forward(line2[-1], LIMERICK2, ngram_reverse_dict)
+    print(line3)
 
     rhyme_seed = get_rhyme_word(line3[-1].spelling, LIMERICK2, ngram_reverse_dict)
-
+    print(rhyme_seed)
     line4 = gen_line_backward(rhyme_seed, LIMERICK2, ngram_reverse_dict)
+    print(line4)
 
     rhyme_seed = get_rhyme_word(line4[-1].spelling, LIMERICK1, ngram_reverse_dict)
+    print(rhyme_seed)
     line5 = gen_line_backward(rhyme_seed, LIMERICK1, ngram_reverse_dict)
+    print(line5)
+
+
 
     lines = line1 + line2 + line3 + line4 + line5
     return [line_to_string(line) for line in lines]
@@ -201,6 +215,10 @@ def produce_couplet(start:List[Word], stress_pattern:str, ngram_dict:NGRAM_DICT,
 def get_rhyme_word(token: str, stress_pattern:str, ngram_dict: NGRAM_DICT) -> Word:
     possible_rhymes = p.rhymes(token)
     filtered_rhymes = [rhyme for rhyme in possible_rhymes if rhyme in ngram_dict and word_fits_pattern(rhyme, stress_pattern, reverse=True)]
+
+    # if not filtered_rhymes:
+    #     print(len([rhyme for rhyme in possible_rhymes if rhyme in ngram_dict]))
+
     return convert_to_word(random.choice(filtered_rhymes))
 
 
@@ -221,7 +239,7 @@ def complete_line_forward(current_line: List[Word], stress_pattern: str, ngram_d
 
     remaining_stress_pattern = get_remaining_stress_pattern(current_line, stress_pattern)
     next_word = gen_next_word_forward(current_line[-1], remaining_stress_pattern, ngram_dict)
-    if completes_line(next_word, current_line):
+    if completes_line(next_word, current_line, stress_pattern):
         return current_line + [next_word]
     else:
         new_line = current_line + [next_word]
@@ -231,14 +249,16 @@ def complete_line_forward(current_line: List[Word], stress_pattern: str, ngram_d
 def complete_line_backward(current_line: List[Word], stress_pattern: str, ngram_dict: NGRAM_DICT) -> List[Word]:
     remaining_stress_pattern = get_remaining_stress_pattern(current_line, stress_pattern, True)
     possible_words = get_possible_words(current_line[0], remaining_stress_pattern, ngram_dict, True, True)
-    next_word = random.choice(possible_words)
+    next_word = possible_words[0]
 
 
-    if completes_line(next_word, current_line):
+    if completes_line(next_word, current_line, stress_pattern):
         return [next_word] + current_line
-    else:
+    elif incomplete_line(next_word, current_line, stress_pattern):
         new_line = [next_word] + current_line
         return complete_line_backward(new_line, stress_pattern, ngram_dict)
+    else:
+        return [next_word] + current_line
 
 
     # gen_next_word_forward(current_line[-1], remaining_stress_pattern, ngram_dict)
@@ -250,10 +270,10 @@ def complete_line_backward(current_line: List[Word], stress_pattern: str, ngram_
 
 def gen_next_word_forward(seed: Word, remaining_stress_pattern: str, ngram_dict: NGRAM_DICT) -> Word:
     possible_words = get_possible_words(seed, remaining_stress_pattern, ngram_dict, dedup=True)
-    if possible_words:
-        next_word = random.choice(possible_words)
-    else:
-        next_word = Word("shall", "0")
+    # if possible_words:
+    next_word = possible_words[0]
+    # else:
+    #     next_word = Word("shall", "0")
     return next_word
 
 def gen_line_forward(seed: Word, stress_pattern: str, ngram_dict: NGRAM_DICT) -> List[Word]:
@@ -268,7 +288,7 @@ def gen_line_backward(seed: Word, stress_pattern: str, ngram_dict: NGRAM_DICT):
 
 
 def get_next_word(last_word: Word, stress_pattern:str, ngram_dict:NGRAM_DICT) -> Word:
-    return random.choice(get_possible_words(last_word, stress_pattern, ngram_dict))
+    return get_possible_words(last_word, stress_pattern, ngram_dict)[0]
 
 
 def filter_possible_words(possible_stresses: List[str], words: List[str]) -> List[Word]:
@@ -335,9 +355,9 @@ def has_path_to_rhyme(current_line: List[Word], rhyme_word: Word, stress_pattern
 
     for possible_word in possible_words:
 
-        if completes_line(possible_word, current_line) and rhymes(possible_word, rhyme_word):
+        if completes_line(possible_word, current_line, stress_pattern) and rhymes(possible_word, rhyme_word):
             return True
-        elif incomplete_line(possible_word, current_line):
+        elif incomplete_line(possible_word, current_line, stress_pattern):
             new_line = current_line + [possible_word]
             remaining_stress_pattern = get_remaining_stress_pattern(current_line, stress_pattern)
             return has_path_to_rhyme(new_line, rhyme_word, remaining_stress_pattern, ngram_dict)
@@ -345,14 +365,14 @@ def has_path_to_rhyme(current_line: List[Word], rhyme_word: Word, stress_pattern
     return False
 
 
-def completes_line(word: Word, current_line: List[Word]) -> bool:
+def completes_line(word: Word, current_line: List[Word], stress_pattern:str) -> bool:
     line = current_line + [word]
-    return sum([len(word.stress_pattern) for word in line]) == 10
+    return sum([len(word.stress_pattern) for word in line]) == len(stress_pattern)
 
 
-def incomplete_line(word: Word, current_line: List[Word]) -> bool:
+def incomplete_line(word: Word, current_line: List[Word], stress_pattern:str) -> bool:
     line = current_line + [word]
-    return sum([len(word.stress_pattern) for word in line]) < 10
+    return sum([len(word.stress_pattern) for word in line]) < len(stress_pattern)
 
 
 def rhymes(word: Word, rhyme_word: Word) -> bool:
