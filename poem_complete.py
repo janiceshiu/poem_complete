@@ -109,12 +109,14 @@ def produce_sonnet(start:List[Word], stress_pattern:str, ngram_dict:NGRAM_DICT, 
     print(qt1)
 
     last_word = qt1[-1][-1]
-    next_word = random.choice(get_possible_words(last_word, IAMBIC_PENTAMETER, ngram_dict))
+    possible_words = get_possible_words(last_word, IAMBIC_PENTAMETER, ngram_dict)
+    next_word = possible_words[0]
     qt2 = produce_quatrain([next_word], IAMBIC_PENTAMETER, ngram_dict, ngram_reverse_dict)
     print(qt2)
     last_word = qt2[-1][-1]
 
-    next_word = random.choice(get_possible_words(last_word, IAMBIC_PENTAMETER, ngram_dict))
+    possible_words = get_possible_words(last_word, IAMBIC_PENTAMETER, ngram_dict)
+    next_word = possible_words[0]
     qt3 = produce_quatrain([next_word], IAMBIC_PENTAMETER, ngram_dict, ngram_reverse_dict)
 
 
@@ -122,7 +124,12 @@ def produce_sonnet(start:List[Word], stress_pattern:str, ngram_dict:NGRAM_DICT, 
 
     last_word = qt3[-1][-1]
 
-    next_word = random.choice(get_possible_words(last_word, IAMBIC_PENTAMETER, ngram_dict))
+    try:
+        possible_words = get_possible_words(last_word, IAMBIC_PENTAMETER, ngram_dict)
+        next_word = possible_words[0]
+    except IndexError:
+        import ipdb; ipdb.set_trace()
+        get_possible_words(last_word, IAMBIC_PENTAMETER, ngram_dict)
 
     couplet = produce_couplet([next_word], IAMBIC_PENTAMETER, ngram_dict, ngram_reverse_dict)
     print(couplet)
@@ -185,7 +192,7 @@ def produce_couplet(start:List[Word], stress_pattern:str, ngram_dict:NGRAM_DICT,
 def get_rhyme_word(token: str, stress_pattern:str, ngram_dict: NGRAM_DICT) -> Word:
     # import ipdb; ipdb.set_trace()
     possible_rhymes = p.rhymes(token)
-    filtered_rhymes = [rhyme for rhyme in possible_rhymes if rhyme in ngram_dict and word_fits_pattern(rhyme, stress_pattern)]
+    filtered_rhymes = [rhyme for rhyme in possible_rhymes if rhyme in ngram_dict and word_fits_pattern(rhyme, stress_pattern, reverse=True)]
     return convert_to_word(random.choice(filtered_rhymes))
 
 
@@ -216,8 +223,10 @@ def complete_line_forward(current_line: List[Word], stress_pattern: str, ngram_d
 def complete_line_backward(current_line: List[Word], stress_pattern: str, ngram_dict: NGRAM_DICT) -> List[Word]:
     remaining_stress_pattern = get_remaining_stress_pattern(current_line, stress_pattern, True)
     possible_words = get_possible_words(current_line[0], remaining_stress_pattern, ngram_dict, True, True)
-
-    next_word = random.choice(possible_words)
+    try:
+        next_word = random.choice(possible_words)
+    except IndexError:
+        import ipdb; ipdb.set_trace()
 
 
     if completes_line(next_word, current_line):
@@ -266,9 +275,21 @@ def filter_possible_words(possible_stresses: List[str], words: List[str]) -> Lis
     filtered_words = []
     for stress_pattern in possible_stresses:
         for word in words:
-            if word_matches_stress(word, stress_pattern) or one_syllable(word):
+            if word_matches_stress(word, stress_pattern):
                 filtered_words.append(Word(word, stress_pattern))
-    return filtered_words
+
+    random.shuffle(filtered_words)
+
+
+    single_syllable_words = []
+    for word in words:
+        for stress_pattern in ["0", "1"]:
+            if word_fits_pattern(word, stress_pattern):
+                word_obj = Word(word, stress_pattern)
+                single_syllable_words.append(word_obj)
+
+    random.shuffle(single_syllable_words)
+    return filtered_words + single_syllable_words
 
 def one_syllable(token:str) -> bool:
     pronunciations = p.phones_for_word(token)
