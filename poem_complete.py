@@ -83,9 +83,13 @@ def main():
     ngram_dict = load_or_create_ngram()
     ngram_reverse_dict = load_or_create_ngram(reverse=True)
 
-    for line in produce_sonnet(words, IAMBIC_PENTAMETER, ngram_dict, ngram_reverse_dict):
-        print(line)
+    sonnet = produce_sonnet(words, IAMBIC_PENTAMETER, ngram_dict, ngram_reverse_dict)
+    for stanza in sonnet:
+        for line in stanza:
+            print(line.capitalize())
+            say(line)
 
+        print("")
 
     # for line in produce_limerick(words, ngram_dict, ngram_reverse_dict):
     #     print(line)
@@ -106,13 +110,13 @@ def produce_sonnet(start:List[Word], stress_pattern:str, ngram_dict:NGRAM_DICT, 
 
     qt1 = produce_quatrain(start, IAMBIC_PENTAMETER, ngram_dict, ngram_reverse_dict)
 
-    print(qt1)
+    # print(qt1)
 
     last_word = qt1[-1][-1]
     possible_words = get_possible_words(last_word, IAMBIC_PENTAMETER, ngram_dict)
     next_word = possible_words[0]
     qt2 = produce_quatrain([next_word], IAMBIC_PENTAMETER, ngram_dict, ngram_reverse_dict)
-    print(qt2)
+    # print(qt2)
     last_word = qt2[-1][-1]
 
     possible_words = get_possible_words(last_word, IAMBIC_PENTAMETER, ngram_dict)
@@ -120,7 +124,7 @@ def produce_sonnet(start:List[Word], stress_pattern:str, ngram_dict:NGRAM_DICT, 
     qt3 = produce_quatrain([next_word], IAMBIC_PENTAMETER, ngram_dict, ngram_reverse_dict)
 
 
-    print(qt3)
+    # print(qt3)
 
     last_word = qt3[-1][-1]
 
@@ -128,10 +132,16 @@ def produce_sonnet(start:List[Word], stress_pattern:str, ngram_dict:NGRAM_DICT, 
     next_word = possible_words[0]
 
     couplet = produce_couplet([next_word], IAMBIC_PENTAMETER, ngram_dict, ngram_reverse_dict)
-    print(couplet)
+    # print(couplet)
 
     lines = qt1 + qt2 + qt3 + couplet
-    return [line_to_string(line) for line in lines]
+
+    qt1_str = [line_to_string(line) for line in qt1]
+    qt2_str = [line_to_string(line) for line in qt2]
+    qt3_str = [line_to_string(line) for line in qt3]
+    c_str = [line_to_string(line) for line in couplet]
+
+    return [qt1_str, qt2_str, qt3_str, c_str]
 
 
 def produce_limerick(start:List[Word], ngram_dict:NGRAM_DICT, ngram_reverse_dict:NGRAM_DICT) -> List[Line]:
