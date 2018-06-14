@@ -124,12 +124,8 @@ def produce_sonnet(start:List[Word], stress_pattern:str, ngram_dict:NGRAM_DICT, 
 
     last_word = qt3[-1][-1]
 
-    try:
-        possible_words = get_possible_words(last_word, IAMBIC_PENTAMETER, ngram_dict)
-        next_word = possible_words[0]
-    except IndexError:
-        import ipdb; ipdb.set_trace()
-        get_possible_words(last_word, IAMBIC_PENTAMETER, ngram_dict)
+    possible_words = get_possible_words(last_word, IAMBIC_PENTAMETER, ngram_dict)
+    next_word = possible_words[0]
 
     couplet = produce_couplet([next_word], IAMBIC_PENTAMETER, ngram_dict, ngram_reverse_dict)
     print(couplet)
@@ -190,7 +186,6 @@ def produce_couplet(start:List[Word], stress_pattern:str, ngram_dict:NGRAM_DICT,
 
 
 def get_rhyme_word(token: str, stress_pattern:str, ngram_dict: NGRAM_DICT) -> Word:
-    # import ipdb; ipdb.set_trace()
     possible_rhymes = p.rhymes(token)
     filtered_rhymes = [rhyme for rhyme in possible_rhymes if rhyme in ngram_dict and word_fits_pattern(rhyme, stress_pattern, reverse=True)]
     return convert_to_word(random.choice(filtered_rhymes))
@@ -223,10 +218,7 @@ def complete_line_forward(current_line: List[Word], stress_pattern: str, ngram_d
 def complete_line_backward(current_line: List[Word], stress_pattern: str, ngram_dict: NGRAM_DICT) -> List[Word]:
     remaining_stress_pattern = get_remaining_stress_pattern(current_line, stress_pattern, True)
     possible_words = get_possible_words(current_line[0], remaining_stress_pattern, ngram_dict, True, True)
-    try:
-        next_word = random.choice(possible_words)
-    except IndexError:
-        import ipdb; ipdb.set_trace()
+    next_word = random.choice(possible_words)
 
 
     if completes_line(next_word, current_line):
