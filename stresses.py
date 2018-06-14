@@ -40,5 +40,8 @@ def word_matches_stress(word: str, stress_pattern_match: str) -> bool:
 
     return False
 
-def word_fits_pattern(word: str, stress_pattern: str) -> bool:
-    return any(word_matches_stress(word, stress) for stress in get_possible_stresses(stress_pattern))
+def word_fits_pattern(word: str, stress_pattern: str, reverse:bool=False) -> bool:
+    if reverse:
+        return any(word_matches_stress(word, stress) for stress in get_possible_stresses_rev(stress_pattern))
+    else:
+        return any(word_matches_stress(word, stress) for stress in get_possible_stresses(stress_pattern))
