@@ -14,7 +14,7 @@ import json
 import re
 from subprocess import call
 
-random.seed(1)
+# random.seed(1)
 
 NGRAM_DICT = Dict[str, List[str]]
 Line = str
@@ -70,9 +70,11 @@ def convert_to_word(token: str) -> Word:
 def main():
     # start = input("How should we start your poem? ").lower().strip()
 
-    start = "Shall I compare thee to".lower().strip()
+    start_sonnet = "Shall I compare thee to".lower().strip()
 
-    words = [convert_to_word(token) for token in nltk.tokenize.word_tokenize(start)]
+    start_limerick = "There".lower().strip()
+
+    words = [convert_to_word(token) for token in nltk.tokenize.word_tokenize(start_sonnet)]
 
 
     # print(list(map(len, get_possible_stresses(IAMBIC_PENTAMETER))))
@@ -83,7 +85,11 @@ def main():
 
     for line in produce_sonnet(words, IAMBIC_PENTAMETER, ngram_dict, ngram_reverse_dict):
         print(line)
-        say(line)
+
+
+    # for line in produce_limerick(words, ngram_dict, ngram_reverse_dict):
+    #     print(line)
+    #     say(line)
 
 
 
@@ -123,6 +129,32 @@ def produce_sonnet(start:List[Word], stress_pattern:str, ngram_dict:NGRAM_DICT, 
 
     lines = qt1 + qt2 + qt3 + couplet
     return [line_to_string(line) for line in lines]
+
+
+def produce_limerick(start:List[Word], ngram_dict:NGRAM_DICT, ngram_reverse_dict:NGRAM_DICT) -> List[Line]:
+
+    LIMERICK1 = "010010010"
+    LIMERICK2 = "0010010"
+    line1 = complete_line_forward(start, LIMERICK1, ngram_dict)
+
+    rhyme_seed = get_rhyme_word(line1[-1].spelling, LIMERICK1, ngram_reverse_dict)
+
+    line2 = gen_line_backward(rhyme_seed, LIMERICK1, ngram_reverse_dict)
+
+
+    line3 = gen_line_forward(line2[-1], LIMERICK2, ngram_reverse_dict)
+
+    rhyme_seed = get_rhyme_word(line3[-1].spelling, LIMERICK2, ngram_reverse_dict)
+
+    line4 = gen_line_backward(rhyme_seed, LIMERICK2, ngram_reverse_dict)
+
+    rhyme_seed = get_rhyme_word(line4[-1].spelling, LIMERICK1, ngram_reverse_dict)
+    line5 = gen_line_backward(rhyme_seed, LIMERICK1, ngram_reverse_dict)
+
+    lines = line1 + line2 + line3 + line4 + line5
+    return [line_to_string(line) for line in lines]
+
+
 
 
 
@@ -219,14 +251,8 @@ def gen_line_backward(seed: Word, stress_pattern: str, ngram_dict: NGRAM_DICT):
     return complete_line_backward([seed], stress_pattern, ngram_dict)
 
 
-def get_next_word(current_word: Word, model) -> List[Word]:
-    """
-        :type current_word: string
-        :type mode: markov_model
-        :rtype: List[string]
-    """
-    words = model.get_next_word(current_word)
-    return words
+def get_next_word(last_word: Word, stress_pattern:str, ngram_dict:NGRAM_DICT) -> Word:
+    return random.choice(get_possible_words(last_word, stress_pattern, ngram_dict))
 
 
 def filter_possible_words(possible_stresses: List[str], words: List[str]) -> List[Word]:
