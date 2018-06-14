@@ -76,7 +76,7 @@ def main():
 
     start_sonnet = "Shall I".lower().strip()
 
-    start_limerick = "There once was a".lower().strip()
+    # start_limerick = "There once was a".lower().strip()
 
     words = [convert_to_word(token) for token in nltk.tokenize.word_tokenize(start_sonnet)]
 
@@ -88,11 +88,20 @@ def main():
     ngram_dict = load_or_create_ngram(corpus, corpus_name)
     ngram_reverse_dict = load_or_create_ngram(corpus, corpus_name, reverse=True)
 
-    sonnet = produce_sonnet(words, IAMBIC_PENTAMETER, ngram_dict, ngram_reverse_dict)
+    generated = False
+    while not generated:
+        try:
+            sonnet = produce_sonnet(words, IAMBIC_PENTAMETER, ngram_dict, ngram_reverse_dict)
+            generated = True
+        except IndexError:
+            print('Still thinking...')
+
+    call(["clear"])
+    print('A Sonnet\n')
     for stanza in sonnet:
         for line in stanza:
             print(line.capitalize())
-            # say(line)
+            say(line)
 
         print("")
 
