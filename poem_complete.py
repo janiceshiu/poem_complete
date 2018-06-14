@@ -2,7 +2,7 @@
 
 import nltk
 from typing import List, Dict
-from nltk.corpus import gutenberg
+from nltk.corpus import gutenberg, brown
 from collections import defaultdict
 from word import Word
 from stresses import get_possible_stresses, word_matches_stress, word_fits_pattern, get_possible_stresses_rev
@@ -21,20 +21,22 @@ Line = str
 Stanza = List[Line]
 IAMBIC_PENTAMETER = "0101010101"
 
-def load_or_create_ngram(reverse: bool = False) -> NGRAM_DICT:
+def load_or_create_ngram(corpus: List[str], corpus_name: str, reverse: bool = False) -> NGRAM_DICT:
+    folder = "ngrams"
+    ngram_file_path = "{}/{}_ngram_dict.json".format(folder, corpus_name)
+    reverse_ngram_file_path = "{}/{}_reverse_ngram_dict.json".format(folder, corpus_name)
     try:
         if reverse:
-            with open('ngram_reverse_dict.json') as fp:
+            with open(reverse_ngram_file_path) as fp:
                 ngram_dict = json.load(fp)
                 return ngram_dict
         else:
-            with open('ngram_dict.json') as fp:
+            with open(ngram_file_path) as fp:
                 ngram_dict = json.load(fp)
                 return ngram_dict
 
     except FileNotFoundError:
-        words = gutenberg.words()
-        filtered = list(filter(lambda word: word.isalpha(), words))
+        filtered = list(filter(lambda word: word.isalpha(), corpus))
         filtered_lower = [word.lower() for word in filtered]
 
         ngram_dict = defaultdict(list)
@@ -47,10 +49,10 @@ def load_or_create_ngram(reverse: bool = False) -> NGRAM_DICT:
             ngram_dict[w1].append(w2)
 
         if reverse:
-            with open('ngram_reverse_dict.json', 'w') as fp:
+            with open(reverse_ngram_file_path, 'w') as fp:
                 json.dump(ngram_dict, fp)
         else:
-            with open('ngram_dict.json', 'w') as fp:
+            with open(ngram_file_path, 'w') as fp:
                 json.dump(ngram_dict, fp)
 
         return ngram_dict
@@ -80,9 +82,10 @@ def main():
 
     # print(list(map(len, get_possible_stresses(IAMBIC_PENTAMETER))))
     # print(words)
-
-    ngram_dict = load_or_create_ngram()
-    ngram_reverse_dict = load_or_create_ngram(reverse=True)
+    corpus = gutenberg.words()
+    corpus_name = 'gutenberg'
+    ngram_dict = load_or_create_ngram(corpus, corpus_name)
+    ngram_reverse_dict = load_or_create_ngram(corpus, corpus_name, reverse=True)
 
     sonnet = produce_sonnet(words, IAMBIC_PENTAMETER, ngram_dict, ngram_reverse_dict)
     for stanza in sonnet:
