@@ -1,5 +1,3 @@
-#!.env/bin/python3
-
 import nltk
 from typing import List, Dict
 from nltk.corpus import gutenberg, brown
@@ -22,88 +20,137 @@ Stanza = List[Line]
 IAMBIC_PENTAMETER = "0101010101"
 FEM_IAMBIC_PENTAMETER = "01010101010"
 
-def load_or_create_ngram(corpus: List[str], corpus_name: str, reverse: bool = False) -> NGRAM_DICT:
-    folder = "ngrams"
-    ngram_file_path = "{}/{}_ngram_dict.json".format(folder, corpus_name)
-    reverse_ngram_file_path = "{}/{}_reverse_ngram_dict.json".format(folder, corpus_name)
-    try:
-        if reverse:
-            with open(reverse_ngram_file_path) as fp:
-                ngram_dict = json.load(fp)
-                return ngram_dict
-        else:
-            with open(ngram_file_path) as fp:
-                ngram_dict = json.load(fp)
-                return ngram_dict
-
-    except FileNotFoundError:
-        filtered = list(filter(lambda word: word.isalpha(), corpus))
-        filtered_lower = [word.lower() for word in filtered]
-
-        ngram_dict = defaultdict(list)
-
-        if reverse:
-            ngrams = zip(filtered_lower[1:], filtered_lower)
-        else:
-            ngrams = zip(filtered_lower, filtered_lower[1:])
-        for w1, w2 in ngrams:
-            ngram_dict[w1].append(w2)
-
-        if reverse:
-            with open(reverse_ngram_file_path, 'w') as fp:
-                json.dump(ngram_dict, fp)
-        else:
-            with open(ngram_file_path, 'w') as fp:
-                json.dump(ngram_dict, fp)
-
-        return ngram_dict
 
 
-def convert_to_word(token: str) -> Word:
-    pronunciations = p.phones_for_word(token)
+def generate_line(seed, remaining_stresses, generator, from_rhyme=False, reverse=False):
+    if not remaining_stresses:
+        return []
+
+    if from_rhyme:
+        words = p.rhymes(seed)
+    else:
+        words = generator.generate_candidates(seed, reverse=reverse)
+    filtered = []
+    # import ipdb; ipdb.set_trace()
+    for word in words:
+        if not generator.word_in_model(word):
+            continue
+        for stress_pattern in get_stress_patterns(word):
+            if reverse and remaining_stresses.endswith(stress_pattern):
+                filtered.append((word, remaining_stresses[:-len(stress_pattern)]))
+
+            elif remaining_stresses.startswith(stress_pattern):
+                filtered.append((word, remaining_stresses[len(stress_pattern):]))
+
+    next_word, remaining_stresses = random.choice(filtered)
+    rest_of_line = generate_line(next_word, remaining_stresses, generator, reverse=reverse)
+    if reverse:
+        return rest_of_line + [next_word]
+    return [next_word] + rest_of_line
+
+
+def get_stress_patterns(word):
+    pronunciations = p.phones_for_word(word)
     stress_patterns = [p.stresses(pronunciation).replace("2", "1")
                        for pronunciation in pronunciations]
-    if stress_patterns:
-        # pick one arbitrarily
-        return Word(token, stress_patterns[0])
-    else:
-        number_syllables_guess = len(re.findall(r"[aeiou]+", token))
-        return Word(token, "?" * number_syllables_guess)
+    # if not stress_patterns:
+    #     # pick one arbitrarily
+    #     number_syllables_guess = len(re.findall(r"[aeiou]+", word))
+    #     d, m = divmod(number_syllables_guess, 2)
+    #     return [d * "01" +  m * "0"]
+    return stress_patterns
+
+
+class BigramGenerator:
+    def __init__(self, model, reverse_model):
+        self.model = model
+        self.reverse_model = reverse_model
+
+    @classmethod
+    def create(cls, corpus: List[str], corpus_name: str):
+        folder = "ngrams"
+        ngram_file_path = "{}/{}_ngram_dict.json".format(folder, corpus_name)
+        reverse_ngram_file_path = "{}/{}_reverse_ngram_dict.json".format(folder, corpus_name)
+
+        model = defaultdict(list)
+        reverse_model = defaultdict(list)
+
+        try:
+            with open(ngram_file_path) as fp:
+                model = json.load(fp)
+            with open(reverse_ngram_file_path) as fp:
+                reverse_model = json.load(fp)
+        except FileNotFoundError:
+            words = [word.lower() for word in corpus if word.isalpha()]
+            bigrams = zip(words, words[1:])
+
+            for w1, w2 in bigrams:
+                model[w1].append(w2)
+                reverse_model[w2].append(w1)
+
+            with open(reverse_ngram_file_path, 'w') as fp:
+                    json.dump(ngram_dict, fp)
+            with open(ngram_file_path, 'w') as fp:
+                    json.dump(ngram_dict, fp)
+
+        return BigramGenerator(model, reverse_model)
+
+    def generate_candidates(self, seed: str, reverse=False) -> [str]:
+        model = self.model
+        if reverse:
+            model = self.reverse_model
+        return model[seed]
+
+    def word_in_model(self, word, reverse=False) -> bool:
+        model = self.model
+        if reverse:
+            model = self.reverse_model
+        return word in model
+
 
 
 def main():
     # start = input("How should we start your poem? ").lower().strip()
 
-    start_sonnet = "Shall I".lower().strip()
+    start_sonnet = "Recurse Center".lower().strip()
 
     # start_limerick = "There once was a".lower().strip()
 
-    words = [convert_to_word(token) for token in nltk.tokenize.word_tokenize(start_sonnet)]
+    words = nltk.tokenize.word_tokenize(start_sonnet)
 
 
     # print(list(map(len, get_possible_stresses(IAMBIC_PENTAMETER))))
     # print(words)
     corpus = gutenberg.words()
     corpus_name = 'gutenberg'
-    ngram_dict = load_or_create_ngram(corpus, corpus_name)
-    ngram_reverse_dict = load_or_create_ngram(corpus, corpus_name, reverse=True)
 
+    bigram_generator = BigramGenerator.create(corpus, corpus_name)
+
+
+
+    seed = "day"
     generated = False
     while not generated:
         try:
-            sonnet = produce_sonnet(words, IAMBIC_PENTAMETER, ngram_dict, ngram_reverse_dict)
+            line1 = generate_line(seed, IAMBIC_PENTAMETER, bigram_generator)
+            line2 = generate_line(line1[-1], IAMBIC_PENTAMETER, bigram_generator)
+            line3 = generate_line(
+                line1[-1], IAMBIC_PENTAMETER, bigram_generator, from_rhyme=True, reverse=True)
+            line4 = generate_line(
+                line2[-1], IAMBIC_PENTAMETER, bigram_generator, from_rhyme=True, reverse=True)
             generated = True
         except IndexError:
             print('Still thinking...')
 
+
     call(["clear"])
     print('A Sonnet\n')
-    for stanza in sonnet:
-        for line in stanza:
-            print(line.capitalize())
-            say(line)
+    for line in [line1, line2, line3, line4]:
+        line = " ".join(line)
+        print(line.capitalize())
+        say(line)
 
-        print("")
+    return
 
 
     # start_limerick = "There once was a".lower().strip()
