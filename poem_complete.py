@@ -31,6 +31,7 @@ def generate_line(seed, remaining_stresses, generator, from_rhyme=False, reverse
     else:
         words = generator.generate_candidates(seed, reverse=reverse)
     filtered = []
+    single_syllable_words = []
     # import ipdb; ipdb.set_trace()
     for word in words:
         if not generator.word_in_model(word):
@@ -38,11 +39,20 @@ def generate_line(seed, remaining_stresses, generator, from_rhyme=False, reverse
         for stress_pattern in get_stress_patterns(word):
             if reverse and remaining_stresses.endswith(stress_pattern):
                 filtered.append((word, remaining_stresses[:-len(stress_pattern)]))
+            elif reverse and len(stress_pattern) == 1:
+                single_syllable_words.append((word, remaining_stresses[:-1]))
 
             elif remaining_stresses.startswith(stress_pattern):
                 filtered.append((word, remaining_stresses[len(stress_pattern):]))
 
-    next_word, remaining_stresses = random.choice(filtered)
+            elif len(stress_pattern) == 1:
+                single_syllable_words.append((word, remaining_stresses[1:]))
+
+    random.shuffle(filtered)
+    random.shuffle(single_syllable_words)
+    words = filtered + single_syllable_words
+
+    next_word, remaining_stresses = words[0]
     rest_of_line = generate_line(next_word, remaining_stresses, generator, reverse=reverse)
     if reverse:
         return rest_of_line + [next_word]
@@ -127,6 +137,8 @@ def main():
     bigram_generator = BigramGenerator.create(corpus, corpus_name)
 
 
+    LIMERICK1 = "010010010"
+    LIMERICK2 = "0010010"
 
     seed = "day"
     generated = False
