@@ -82,8 +82,8 @@ class BigramGenerator:
         ngram_file_path = "{}/{}_ngram_dict.json".format(folder, corpus_name)
         reverse_ngram_file_path = "{}/{}_reverse_ngram_dict.json".format(folder, corpus_name)
 
-        model = defaultdict(list)
-        reverse_model = defaultdict(list)
+        model = defaultdict(set)
+        reverse_model = defaultdict(set)
 
         try:
             with open(ngram_file_path) as fp:
@@ -95,8 +95,8 @@ class BigramGenerator:
             bigrams = zip(words, words[1:])
 
             for w1, w2 in bigrams:
-                model[w1].append(w2)
-                reverse_model[w2].append(w1)
+                model[w1].add(w2)
+                reverse_model[w2].add(w1)
 
             with open(reverse_ngram_file_path, 'w') as fp:
                     json.dump(ngram_dict, fp)
