@@ -27,7 +27,7 @@ def generate_line(seed, remaining_stresses, generator, from_rhyme=False, reverse
         return []
 
     if from_rhyme:
-        words = p.rhymes(seed)
+        words = [word for word in p.rhymes(seed) if word != seed]
     else:
         words = generator.generate_candidates(seed, reverse=reverse)
     filtered = []
@@ -137,19 +137,32 @@ def main():
     bigram_generator = BigramGenerator.create(corpus, corpus_name)
 
 
-    LIMERICK1 = "010010010"
-    LIMERICK2 = "0010010"
+    LIMERICK1 = "01001001"
+    LIMERICK2 = "001001"
 
     seed = "day"
     generated = False
     while not generated:
         try:
-            line1 = generate_line(seed, IAMBIC_PENTAMETER, bigram_generator)
-            line2 = generate_line(line1[-1], IAMBIC_PENTAMETER, bigram_generator)
-            line3 = generate_line(
-                line1[-1], IAMBIC_PENTAMETER, bigram_generator, from_rhyme=True, reverse=True)
-            line4 = generate_line(
-                line2[-1], IAMBIC_PENTAMETER, bigram_generator, from_rhyme=True, reverse=True)
+            sonnet = []
+            seed = None
+
+            for __ in range(3):
+                if not seed:
+                    seed = "if"
+                line1 = generate_line(seed, IAMBIC_PENTAMETER, bigram_generator)
+                line2 = generate_line(
+                    line1[-1], IAMBIC_PENTAMETER, bigram_generator)
+                line3 = generate_line(line1[-1], IAMBIC_PENTAMETER, bigram_generator, from_rhyme=True, reverse=True)
+                line4 = generate_line(
+                    line2[-1], IAMBIC_PENTAMETER, bigram_generator, from_rhyme=True, reverse=True)
+
+                seed = line4[-1]
+                sonnet += [line1, line2, line3, line4]
+
+            line13 = generate_line(seed, IAMBIC_PENTAMETER, bigram_generator)
+            sonnet.append(line13)
+            sonnet.append(generate_line(line13[-1], IAMBIC_PENTAMETER, bigram_generator, from_rhyme=True, reverse=True))
             generated = True
         except IndexError:
             print('Still thinking...')
@@ -157,7 +170,7 @@ def main():
 
     call(["clear"])
     print('A Sonnet\n')
-    for line in [line1, line2, line3, line4]:
+    for line in sonnet:
         line = " ".join(line)
         print(line.capitalize())
         say(line)
