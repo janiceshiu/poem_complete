@@ -12,6 +12,7 @@ import time
 import pickle
 import json
 import re
+import platform
 from subprocess import call
 
 # random.seed(1)
@@ -118,7 +119,8 @@ def main():
 
 
 def say(line:str):
-    call(["say", line])
+    if platform.system() == 'Darwin':
+        call(["say", line])
 
 
 
